@@ -10,9 +10,13 @@ To achive that we use three functions
 | colorization | colorize black and white picture |
 | image-resizer | resize image to 20% of its size |
 
+
 ### Writing Function
-We use two different kind of function  
-**Sync** and **aSync**
+Here we have three different kind of functions  
+**Sync**   
+**ASync**     
+and   
+**dag**  
 
 #### Writing Sync Function `upload-pipeline`
 Sync function meant to perform all the operation in Sync and reply the caller once finished
@@ -55,7 +59,21 @@ Sync function meant to perform all the operation in Sync and reply the caller on
                 })
 
 ```
+#### Invoke sync function `upload-flow`
+    
+##### Invoke flow with a image with more than once face
+```bash
+cat coldplay.jpg | faas-cli invoke -f stack.yml upload-pipeline
+``` 
+It will result in an error: `More than one face detected, picture should have single face`
 
+##### Invoke flow with right image
+```bash
+cat chris.jpg | faas-cli invoke -f stack.yml upload-pipeline > chris-dp.jpg
+``` 
+It will create a color and compressed image
+     
+     
 #### Writing ASync Function `upload-flow-async`
 ASync function meant to perform all the operation in aSync and upload the result in a storage
 
@@ -70,14 +88,11 @@ Function definition
       // Set DataStore
       context.SetDataStore(miniosm)
 
-      // define Pipleline
-      flow.
+        flow.
                 Modify(func(data []byte) ([]byte, error) {
                         // Set the name of the file (error if not specified)
-                        filename := getQuery("file")
-                        if filename != "" {
-                                context.Set("fileName", filename)
-                        } else {
+                        filename := context.Query.Get("file")
+                        if filename == "" {
                                 return nil, fmt.Errorf("Provide file name with `--query file=<name>`")
                         }
                         // Set data to reuse after facedetect
@@ -92,8 +107,8 @@ Function definition
                         // validate face
                         err := validateFace(data)
                         if err != nil {
-                                file, _ := context.GetString("fileName")
-                                return nil, fmt.Errorf("File %s, %v", file, err)
+                                filename := context.Query.Get("file")
+                                return nil, fmt.Errorf("File %s, %v", filename, err)
                         }
                         // Get data from context
                         rawdata, err := context.GetBytes("rawImage")
@@ -106,10 +121,7 @@ Function definition
                 Apply("image-resizer").
                 Modify(func(data []byte) ([]byte, error) {
                         // get file name from context
-                        filename, err := context.GetString("fileName")
-                        if err != nil {
-                                return nil, fmt.Errorf("Failed to get file name in context, %v", err)
-                        }
+                        filename := context.Query.Get("file")
                         // upload file to storage
                         err = upload(&http.Client{}, "http://gateway:8080/function/file-storage",
                                 filename, bytes.NewReader(data))
@@ -128,33 +140,19 @@ Function definition
                 Finally(func(state string) {
                         // Optional (cleanup)
                         // Cleanup is not needed if using default DataStore
-                        context.Del("fileName")
                         context.Del("rawImage")
                 })
+
 ```
 
-#### Invoke sync function `upload-flow`
     
-##### Invoke flow with a image with more than once face
-```bash
-cat coldplay.jpg | faas-cli invoke -f stack.yml upload-pipeline
-``` 
-It will result in an error: `More than one face detected, picture should have single face`
-
-##### Invoke flow with right image
-```bash
-cat chris.jpg | faas-cli invoke -f stack.yml upload-pipeline > chris-dp.jpg
-``` 
-It will create a color and compressed image
-     
-     
 #### Invoke Async function `upload-pipeline-async`  
 
 ##### Invoke flow with a image with more than once face
 ```bash
 cat coldplay.jpg | faas-cli invoke --query file=coldplay.jpg --async -f stack.yml upload-pipeline-async
 ``` 
-It will result in an error: `More than one face detected, picture should have single face`
+It will result in an error: `More than one face detected, picture should have single face` in the log of the function
       
 ##### Invoke flow with right image
 ```bash
@@ -164,3 +162,5 @@ Download from the storage
 ```bash
 curl http://127.0.0.1:8080/function/file-storage?file=chris.jpg > chris-dp.jpg
 ```
+   
+    
