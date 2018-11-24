@@ -81,7 +81,7 @@ func (consulStore *ConsulStateStore) IncrementCounter(vertex string) (int, error
 			return 0, fmt.Errorf("failed to convert counter for %s, error %v", vertex, err)
 		}
 
-		count := counter + 1
+		count = counter + 1
 		counterStr := fmt.Sprintf("%d", count)
 
 		p := &consul.KVPair{Key: key, Value: []byte(counterStr), ModifyIndex: modifyIndex}
