@@ -7,6 +7,8 @@ functions:
     lang: faas-flow
     handler: ./upload-pipeline
     image: s8sg/upload-pipeline:latest
+    labels:
+      faas-flow: 1
     environment:
       read_timeout: 120
       write_timeout: 120
@@ -19,6 +21,8 @@ functions:
     lang: faas-flow
     handler: ./upload-pipeline-async
     image: s8sg/upload-pipeline-async:latest
+    labels:
+      faas-flow: 1
     environment:
       read_timeout: 120
       write_timeout: 120
@@ -34,6 +38,8 @@ functions:
     lang: faas-flow
     handler: ./upload-pipeline-dag
     image: s8sg/upload-pipeline-dag:latest
+    labels:
+      faas-flow: 1
     environment:
       read_timeout: 120
       write_timeout: 120
