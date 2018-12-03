@@ -9,6 +9,7 @@ functions:
     image: s8sg/upload-pipeline:latest
     labels:
       faas-flow: 1
+      faas-flow-desc: "check and edit a photo with one face synchronously"
     environment:
       read_timeout: 120
       write_timeout: 120
@@ -23,6 +24,7 @@ functions:
     image: s8sg/upload-pipeline-async:latest
     labels:
       faas-flow: 1
+      faas-flow-desc: "check and edit a photo with one face asynchronously, and upload result to storage"
     environment:
       read_timeout: 120
       write_timeout: 120
@@ -40,6 +42,7 @@ functions:
     image: s8sg/upload-pipeline-dag:latest
     labels:
       faas-flow: 1
+      faas-flow-desc: "check and edit a photo with one face in parralel with asynchronous dag, and upload result to storage"
     environment:
       read_timeout: 120
       write_timeout: 120
