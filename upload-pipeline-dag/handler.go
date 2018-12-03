@@ -109,11 +109,10 @@ func Define(flow *faasflow.Workflow, context *faasflow.Context) (err error) {
 	// Create a function vertex to detect face
 	uploadDag.CreateFunctionVertex("detect-face", "facedetect")
 
-	// Create a function vertex to colorize image
-	uploadDag.CreateFunctionVertex("colorize", "colorization")
-
-	// Create a function vertex to compress image
-	uploadDag.CreateFunctionVertex("compress", "image-resizer")
+	// Create a function vertex edit-image to colorize image
+	uploadDag.CreateFunctionVertex("edit-image", "colorization")
+	// Add a function in vertex edit-image to compress image
+	uploadDag.CreateFunctionVertex("edit-image", "image-resizer")
 
 	// Create a modifier vertex to validate image and upload
 	// It uses
@@ -145,10 +144,9 @@ func Define(flow *faasflow.Workflow, context *faasflow.Context) (err error) {
 	uploadDag.AddEdge("validate-query", "detect-face")
 	uploadDag.AddEdge("detect-face", "validate-and-upload")
 
-	// validate-query -> colorize -> compress -> validate-and-upload
-	uploadDag.AddEdge("validate-query", "colorize")
-	uploadDag.AddEdge("colorize", "compress")
-	uploadDag.AddEdge("compress", "validate-and-upload")
+	// validate-query -> edit-image -> validate-and-upload
+	uploadDag.AddEdge("validate-query", "edit-image")
+	uploadDag.AddEdge("edit-image", "validate-and-upload")
 
 	// add the dag to the flow
 	flow.ExecuteDag(uploadDag)
