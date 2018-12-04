@@ -149,7 +149,7 @@ func Define(flow *faasflow.Workflow, context *faasflow.Context) (err error) {
 	uploadDag.AddEdge("edit-image", "validate-and-upload")
 
 	// add the dag to the flow
-	flow.ExecuteDag(uploadDag)
+	err = flow.ExecuteDag(uploadDag)
 
 	flow.
 		OnFailure(func(err error) ([]byte, error) {
