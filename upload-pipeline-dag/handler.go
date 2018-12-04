@@ -97,7 +97,7 @@ func Define(flow *faasflow.Workflow, context *faasflow.Context) (err error) {
 	uploadDag := faasflow.CreateDag()
 
 	// Create a modifier vertex to validate request query
-	uploadDag.CreateModifierVertex("validate-query", func(data []byte) ([]byte, error) {
+	uploadDag.AddModifier("validate-query", func(data []byte) ([]byte, error) {
 		// Set the name of the file (error if not specified)
 		filename := context.Query.Get("file")
 		if filename == "" {
@@ -107,26 +107,15 @@ func Define(flow *faasflow.Workflow, context *faasflow.Context) (err error) {
 	})
 
 	// Create a function vertex to detect face
-	uploadDag.CreateFunctionVertex("detect-face", "facedetect")
+	uploadDag.AddFunction("detect-face", "facedetect")
 
 	// Create a function vertex edit-image to colorize image
-	uploadDag.CreateFunctionVertex("edit-image", "colorization")
+	uploadDag.AddFunction("edit-image", "colorization")
 	// Add a function in vertex edit-image to compress image
-	uploadDag.CreateFunctionVertex("edit-image", "image-resizer")
+	uploadDag.AddFunction("edit-image", "image-resizer")
 
-	// Create a modifier vertex to validate image and upload
-	// It uses
-	uploadDag.CreateModifierVertex("validate-and-upload", func(data []byte) ([]byte, error) {
-		// get file name from context
-		filename := context.Query.Get("file")
-		// upload file to storage
-		err = upload(&http.Client{}, "http://gateway:8080/function/file-storage",
-			filename, bytes.NewReader(data))
-		if err != nil {
-			return nil, err
-		}
-		return nil, nil
-	}, faasflow.Serializer(func(inputs map[string][]byte) ([]byte, error) {
+	// Create a vertex with serializer
+	uploadDag.AddVertex("validate-and-upload", faasflow.Serializer(func(inputs map[string][]byte) ([]byte, error) {
 		// Get facedetect result from input
 		faceDetectResult := inputs["detect-face"]
 
@@ -139,6 +128,19 @@ func Define(flow *faasflow.Workflow, context *faasflow.Context) (err error) {
 		data := inputs["compress"]
 		return data, nil
 	}))
+
+	// Create a modifier to the vertex to validate image and upload
+	uploadDag.AddModifier("validate-and-upload", func(data []byte) ([]byte, error) {
+		// get file name from context
+		filename := context.Query.Get("file")
+		// upload file to storage
+		err = upload(&http.Client{}, "http://gateway:8080/function/file-storage",
+			filename, bytes.NewReader(data))
+		if err != nil {
+			return nil, err
+		}
+		return nil, nil
+	})
 
 	// validate-query -> detect-face -> validate-upload
 	uploadDag.AddEdge("validate-query", "detect-face")
