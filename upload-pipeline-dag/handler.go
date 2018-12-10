@@ -109,10 +109,27 @@ func Define(flow *faasflow.Workflow, context *faasflow.Context) (err error) {
 	// Create a function vertex to detect face
 	uploadDag.AddFunction("detect-face", "facedetect")
 
-	// Create a function vertex edit-image to colorize image
-	uploadDag.AddFunction("edit-image", "colorization")
-	// Add a function in vertex edit-image to compress image
-	uploadDag.AddFunction("edit-image", "image-resizer")
+	/*
+		// Create a Node and appned two operations
+
+		// Create a function vertex edit-image to colorize image
+		uploadDag.AddFunction("edit-image", "colorization")
+		// Add a function in vertex edit-image to compress image
+		uploadDag.AddFunction("edit-image", "image-resizer")
+	*/
+
+	// Create a seperate sub dag and add it as a vertex
+
+	// create a subdag
+	editDag := faasflow.CreateDag()
+	// Create a function dag edit-image to colorize image
+	editDag.AddFunction("colorize", "colorization")
+	// Add a function in dag edit-image to compress image
+	editDag.AddFunction("resize", "image-resizer")
+	// colorize -> resize
+	editDag.AddEdge("colorize", "resize")
+	// Add subdag as a vertex
+	uploadDag.AddDag("edit-image", editDag)
 
 	// Create a vertex with serializer
 	uploadDag.AddVertex("validate-and-upload", faasflow.Serializer(func(inputs map[string][]byte) ([]byte, error) {
