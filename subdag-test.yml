@@ -8,3 +8,5 @@ environment:
   consul_dc: "dc1"
   s3_url: "minio:9000"
   s3_tls: false
+  enable_tracing: true
+  trace_server: "jaegertracing:5775"

@@ -3,3 +3,5 @@ environment:
   gateway: "gateway:8080"
   enable_tracing: false
   enable_hmac: false
+  enable_tracing: true
+  trace_server: "jaegertracing:5775"

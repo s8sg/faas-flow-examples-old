@@ -6,21 +6,29 @@ import (
 	minioDataStore "github.com/s8sg/faas-flow-minio-datastore"
 	sdk "github.com/s8sg/faas-flow/sdk"
 	"os"
+	"time"
 )
 
 func debug(node string) sdk.Modifier {
 	return func(data []byte) ([]byte, error) {
-		data = []byte(node + " (" + string(data) + ") ")
+		if len(data) == 0 {
+			// Get initial time
+			data = []byte("Start: " + time.Now().String())
+		}
+		data = []byte(node + "( " + string(data) + " )")
 		return data, nil
 	}
 }
 
-func serializer(nodes map[string][]byte) ([]byte, error) {
-	data := []byte("")
+func aggregator(nodes map[string][]byte) ([]byte, error) {
+	data := ""
 	for _, value := range nodes {
-		data = []byte(string(data) + " + " + string(value))
+		if len(data) == 0 {
+			data = string(value)
+		}
+		data = string(value) + " + " + data
 	}
-	return data, nil
+	return []byte(data), nil
 }
 
 // Define provide definiton of the workflow
@@ -34,19 +42,19 @@ func Define(flow *faasflow.Workflow, context *faasflow.Context) (err error) {
 	maindag.AddModifier("n3", debug("n3"))
 	maindag.AddModifier("n4", debug("n4"))
 
-	maindag.AddVertex("n5", faasflow.Serializer(serializer))
+	maindag.AddVertex("n5", faasflow.Aggregator(aggregator))
 	maindag.AddModifier("n5", debug("n5"))
 
 	maindag.AddModifier("n6", debug("n6"))
 
-	maindag.AddVertex("n7", faasflow.Serializer(serializer))
+	maindag.AddVertex("n7", faasflow.Aggregator(aggregator))
 	maindag.AddModifier("n7", debug("n7"))
 
 	maindag.AddModifier("n8", debug("n8"))
 	maindag.AddModifier("n9", debug("n9"))
 	maindag.AddModifier("n10", debug("n10"))
 
-	maindag.AddVertex("n11", faasflow.Serializer(serializer))
+	maindag.AddVertex("n11", faasflow.Aggregator(aggregator))
 	maindag.AddModifier("n11", debug("n11"))
 
 	subdag := faasflow.CreateDag()
@@ -58,45 +66,45 @@ func Define(flow *faasflow.Workflow, context *faasflow.Context) (err error) {
 	superSubDag.AddModifier("n15.2", debug("n15.2"))
 	superSubDag.AddModifier("n15.3", debug("n15.3"))
 	superSubDag.AddModifier("n15.4", debug("n15.4"))
-	superSubDag.AddVertex("n15.5", faasflow.Serializer(serializer))
+	superSubDag.AddVertex("n15.5", faasflow.Aggregator(aggregator))
 	superSubDag.AddModifier("n15.5", debug("n15.5"))
-	superSubDag.AddEdge("n15.1", "n15.2")
-	superSubDag.AddEdge("n15.2", "n15.3")
-	superSubDag.AddEdge("n15.3", "n15.5")
-	superSubDag.AddEdge("n15.1", "n15.4")
-	superSubDag.AddEdge("n15.4", "n15.5")
+	superSubDag.AddEdge("n15.1", "n15.2", faasflow.Execution)
+	superSubDag.AddEdge("n15.2", "n15.3", faasflow.Execution)
+	superSubDag.AddEdge("n15.3", "n15.5", faasflow.Execution)
+	superSubDag.AddEdge("n15.1", "n15.4", faasflow.Execution)
+	superSubDag.AddEdge("n15.4", "n15.5", faasflow.Execution)
 
 	subdag.AddSubDag("n15", superSubDag)
-	subdag.AddVertex("n16", faasflow.Serializer(serializer))
+	subdag.AddVertex("n16", faasflow.Aggregator(aggregator))
 	subdag.AddModifier("n16", debug("n16"))
-	subdag.AddEdge("n13", "n14")
-	subdag.AddEdge("n13", "n15")
-	subdag.AddEdge("n14", "n16")
-	subdag.AddEdge("n15", "n16")
+	subdag.AddEdge("n13", "n14", faasflow.Execution)
+	subdag.AddEdge("n13", "n15", faasflow.Execution)
+	subdag.AddEdge("n14", "n16", faasflow.Execution)
+	subdag.AddEdge("n15", "n16", faasflow.Execution)
 	maindag.AddSubDag("n12", subdag)
 
-	maindag.AddVertex("n17", faasflow.Serializer(serializer))
+	maindag.AddVertex("n17", faasflow.Aggregator(aggregator))
 	maindag.AddModifier("n17", debug("n17"))
 
-	maindag.AddEdge("n1", "n2")
-	maindag.AddEdge("n2", "n3")
-	maindag.AddEdge("n2", "n4")
-	maindag.AddEdge("n2", "n6")
-	maindag.AddEdge("n3", "n5")
-	maindag.AddEdge("n4", "n5")
-	maindag.AddEdge("n5", "n7")
-	maindag.AddEdge("n6", "n7")
-	maindag.AddEdge("n7", "n17")
+	maindag.AddEdge("n1", "n2", faasflow.Execution)
+	maindag.AddEdge("n2", "n3", faasflow.Execution)
+	maindag.AddEdge("n2", "n4", faasflow.Execution)
+	maindag.AddEdge("n2", "n6", faasflow.Execution)
+	maindag.AddEdge("n3", "n5", faasflow.Execution)
+	maindag.AddEdge("n4", "n5", faasflow.Execution)
+	maindag.AddEdge("n5", "n7", faasflow.Execution)
+	maindag.AddEdge("n6", "n7", faasflow.Execution)
+	maindag.AddEdge("n7", "n17", faasflow.Execution)
 
-	maindag.AddEdge("n1", "n8")
-	maindag.AddEdge("n8", "n9")
-	maindag.AddEdge("n8", "n10")
-	maindag.AddEdge("n9", "n11")
-	maindag.AddEdge("n10", "n11")
-	maindag.AddEdge("n11", "n17")
+	maindag.AddEdge("n1", "n8", faasflow.Execution)
+	maindag.AddEdge("n8", "n9", faasflow.Execution)
+	maindag.AddEdge("n8", "n10", faasflow.Execution)
+	maindag.AddEdge("n9", "n11", faasflow.Execution)
+	maindag.AddEdge("n10", "n11", faasflow.Execution)
+	maindag.AddEdge("n11", "n17", faasflow.Execution)
 
-	maindag.AddEdge("n1", "n12")
-	maindag.AddEdge("n12", "n17")
+	maindag.AddEdge("n1", "n12", faasflow.Execution)
+	maindag.AddEdge("n12", "n17", faasflow.Execution)
 
 	err = flow.ExecuteDag(maindag)
 
