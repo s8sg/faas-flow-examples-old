@@ -132,7 +132,7 @@ func Define(flow *faasflow.Workflow, context *faasflow.Context) (err error) {
 	*/
 
 	// Create a vertex with serializer
-	uploadDag.AddVertex("validate-and-upload", faasflow.Serializer(func(inputs map[string][]byte) ([]byte, error) {
+	uploadDag.AddVertex("validate-and-upload", faasflow.Aggregator(func(inputs map[string][]byte) ([]byte, error) {
 		// Get facedetect result from input
 		faceDetectResult := inputs["detect-face"]
 
