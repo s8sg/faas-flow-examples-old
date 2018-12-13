@@ -6,3 +6,5 @@ environment:
   intermediate_storage: true # use datastore as a intermediate storage
   s3_url: "minio:9000"
   s3_tls: false
+  enable_tracing: true
+  trace_server: "jaegertracing:5775"

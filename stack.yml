@@ -54,6 +54,25 @@ functions:
       - s3-secret-key
       - s3-access-key
 
+  subdag-test:
+    lang: faas-flow
+    handler: ./subdag-test
+    image: s8sg/subdag-test:latest
+    labels:
+      faas-flow: 1
+      faas-flow-desc: "check nested subdag execution"
+    environment:
+      read_timeout: 120
+      write_timeout: 120
+      write_debug: true
+      combine_output: false
+    environment_file:
+      - subdag-test.yml
+    secrets:
+      - s3-secret-key
+      - s3-access-key
+
+
   colorization:
     lang: dockerfile
     handler: ./faas-colorization
