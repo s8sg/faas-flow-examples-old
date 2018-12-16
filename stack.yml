@@ -60,7 +60,7 @@ functions:
     image: s8sg/subdag-test:latest
     labels:
       faas-flow: 1
-      faas-flow-desc: "check nested subdag execution"
+      faas-flow-desc: "check nested subdag implemented as data flow"
     environment:
       read_timeout: 120
       write_timeout: 120
@@ -72,6 +72,20 @@ functions:
       - s3-secret-key
       - s3-access-key
 
+  subdag-test-execution:
+    lang: faas-flow
+    handler: ./subdag-test-execution
+    image: s8sg/subdag-test-execution:latest
+    labels:
+      faas-flow: 1
+      faas-flow-desc: "check nested subdag implemented as execution flow"
+    environment:
+      read_timeout: 120
+      write_timeout: 120
+      write_debug: true
+      combine_output: false
+    environment_file:
+      - subdag-test-execution.yml
 
   colorization:
     lang: dockerfile

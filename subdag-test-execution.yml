@@ -1,0 +1,12 @@
+environment:
+  workflow_name: "subdag-test-execution"
+  gateway: "gateway:8080"
+  enable_tracing: false
+  enable_hmac: false
+  intermediate_storage: true
+  consul_url: "statestore_consul:8500"
+  consul_dc: "dc1"
+  #  s3_url: "minio:9000"
+  # s3_tls: false
+  enable_tracing: true
+  trace_server: "jaegertracing:5775"
