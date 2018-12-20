@@ -5,6 +5,7 @@ import (
 	consulStateStore "github.com/s8sg/faas-flow-consul-statestore"
 	minioDataStore "github.com/s8sg/faas-flow-minio-datastore"
 	sdk "github.com/s8sg/faas-flow/sdk"
+	"log"
 	"os"
 	"time"
 )
@@ -13,9 +14,11 @@ func debug(node string) sdk.Modifier {
 	return func(data []byte) ([]byte, error) {
 		if len(data) == 0 {
 			// Get initial time
-			data = []byte("Start: " + time.Now().String())
+			t := time.Now()
+			data = []byte(t.Format("15:04:05"))
 		}
 		data = []byte(node + "( " + string(data) + " )")
+		log.Printf("Executing Node %s", node)
 		return data, nil
 	}
 }
@@ -61,19 +64,45 @@ func Define(flow *faasflow.Workflow, context *faasflow.Context) (err error) {
 	subdag.AddModifier("n13", debug("n13"))
 	subdag.AddModifier("n14", debug("n14"))
 
-	superSubDag := faasflow.CreateDag()
-	superSubDag.AddModifier("n15.1", debug("n15.1"))
-	superSubDag.AddModifier("n15.2", debug("n15.2"))
-	superSubDag.AddModifier("n15.3", debug("n15.3"))
-	superSubDag.AddModifier("n15.4", debug("n15.4"))
-	superSubDag.AddVertex("n15.5", faasflow.Aggregator(aggregator))
-	superSubDag.AddModifier("n15.5", debug("n15.5"))
-	superSubDag.AddEdge("n15.1", "n15.2")
-	superSubDag.AddEdge("n15.2", "n15.3")
-	superSubDag.AddEdge("n15.3", "n15.5")
-	superSubDag.AddEdge("n15.1", "n15.4")
-	superSubDag.AddEdge("n15.4", "n15.5")
-	subdag.AddSubDag("n15", superSubDag)
+	superSubDag1 := faasflow.CreateDag()
+	superSubDag1.AddModifier("ss1", debug("ss1"))
+	superSubDag1.AddModifier("ss2", debug("ss2"))
+	superSubDag1.AddModifier("ss3", debug("ss3"))
+	superSubDag1.AddModifier("ss4", debug("ss4"))
+	superSubDag1.AddVertex("ss5", faasflow.Aggregator(aggregator))
+	superSubDag1.AddModifier("ss5", debug("ss5"))
+	superSubDag1.AddEdge("ss1", "ss2")
+	superSubDag1.AddEdge("ss2", "ss3")
+	superSubDag1.AddEdge("ss3", "ss5")
+	superSubDag1.AddEdge("ss1", "ss4")
+	superSubDag1.AddEdge("ss4", "ss5")
+
+	superSubDag2 := faasflow.CreateDag()
+	superSubDag2.AddModifier("dd1", debug("dd1"))
+	superSubDag2.AddModifier("dd2", debug("dd2"))
+	superSubDag2.AddModifier("dd3", debug("dd3"))
+	superSubDag2.AddModifier("dd4", debug("dd4"))
+	superSubDag2.AddVertex("dd5", faasflow.Aggregator(aggregator))
+	superSubDag2.AddModifier("dd5", debug("dd5"))
+	superSubDag2.AddEdge("dd1", "dd2")
+	superSubDag2.AddEdge("dd2", "dd3")
+	superSubDag2.AddEdge("dd3", "dd5")
+	superSubDag2.AddEdge("dd1", "dd4")
+	superSubDag2.AddEdge("dd4", "dd5")
+
+	// Normal Graph
+	// subdag.AddSubDag("n15", superSubDag1)
+
+	// Foreach Graph
+	// subdag.AddForEachDag("n15", superSubDag1, faasflow.ForEach(func(data []byte) map[string][]byte {
+	// 	return map[string][]byte{"c1": data, "c2": data, "c3": data}
+	// }, aggregator))
+
+	// Condition Graph
+	subdag.AddConditionalDags("n15", map[string]*faasflow.DagFlow{"c1": superSubDag1, "c2": superSubDag2},
+		faasflow.Condition(func(data []byte) []string {
+			return []string{"c1", "c2"}
+		}, aggregator))
 
 	subdag.AddVertex("n16", faasflow.Aggregator(aggregator))
 	subdag.AddModifier("n16", debug("n16"))
@@ -106,7 +135,7 @@ func Define(flow *faasflow.Workflow, context *faasflow.Context) (err error) {
 	maindag.AddEdge("n1", "n12")
 	maindag.AddEdge("n12", "n17")
 
-	err = flow.ExecuteDag(maindag)
+	flow.ExecuteDag(maindag)
 
 	return
 }

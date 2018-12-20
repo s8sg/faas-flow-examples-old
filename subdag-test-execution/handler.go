@@ -57,21 +57,24 @@ func Define(flow *faasflow.Workflow, context *faasflow.Context) (err error) {
 	maindag.AddModifier("n11", debug("n11"))
 
 	subdag := faasflow.CreateDag()
+
 	subdag.AddModifier("n13", debug("n13"))
 	subdag.AddModifier("n14", debug("n14"))
 
 	superSubDag := faasflow.CreateDag()
-	superSubDag.AddModifier("n15.1", debug("n15.1"))
-	superSubDag.AddModifier("n15.2", debug("n15.2"))
-	superSubDag.AddModifier("n15.3", debug("n15.3"))
-	superSubDag.AddModifier("n15.4", debug("n15.4"))
-	//superSubDag.AddVertex("n15.5", faasflow.Aggregator(aggregator))
-	//superSubDag.AddModifier("n15.5", debug("n15.5"))
-	superSubDag.AddEdge("n15.1", "n15.2", faasflow.Execution)
-	superSubDag.AddEdge("n15.2", "n15.3", faasflow.Execution)
-	//superSubDag.AddEdge("n15.3", "n15.5", faasflow.Execution)
-	superSubDag.AddEdge("n15.1", "n15.4", faasflow.Execution)
-	//superSubDag.AddEdge("n15.4", "n15.5", faasflow.Execution)
+	superSubDag.AddModifier("ss1", debug("ss1"))
+	superSubDag.AddModifier("ss2", debug("ss2"))
+	superSubDag.AddModifier("ss3", debug("ss3"))
+	superSubDag.AddModifier("ss4", debug("ss4"))
+	superSubDag.AddVertex("ss5", faasflow.Aggregator(aggregator))
+	superSubDag.AddModifier("ss5", debug("ss5"))
+
+	superSubDag.AddEdge("ss1", "ss2", faasflow.Execution)
+	superSubDag.AddEdge("ss2", "ss3", faasflow.Execution)
+	superSubDag.AddEdge("ss3", "ss5", faasflow.Execution)
+	superSubDag.AddEdge("ss1", "ss4", faasflow.Execution)
+	superSubDag.AddEdge("ss4", "ss5", faasflow.Execution)
+
 	subdag.AddSubDag("n15", superSubDag)
 
 	subdag.AddVertex("n16", faasflow.Aggregator(aggregator))
@@ -80,11 +83,11 @@ func Define(flow *faasflow.Workflow, context *faasflow.Context) (err error) {
 	subdag.AddEdge("n13", "n15", faasflow.Execution)
 	subdag.AddEdge("n14", "n16", faasflow.Execution)
 	subdag.AddEdge("n15", "n16", faasflow.Execution)
+
 	maindag.AddSubDag("n12", subdag)
 
 	maindag.AddVertex("n17", faasflow.Aggregator(aggregator))
 	maindag.AddModifier("n17", debug("n17"))
-
 	maindag.AddEdge("n1", "n2", faasflow.Execution)
 	maindag.AddEdge("n2", "n3", faasflow.Execution)
 	maindag.AddEdge("n2", "n4", faasflow.Execution)
@@ -105,7 +108,7 @@ func Define(flow *faasflow.Workflow, context *faasflow.Context) (err error) {
 	maindag.AddEdge("n1", "n12", faasflow.Execution)
 	maindag.AddEdge("n12", "n17", faasflow.Execution)
 
-	err = flow.ExecuteDag(maindag)
+	flow.ExecuteDag(maindag)
 
 	return
 }

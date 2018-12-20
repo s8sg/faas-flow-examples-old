@@ -142,7 +142,7 @@ func Define(flow *faasflow.Workflow, context *faasflow.Context) (err error) {
 			return nil, fmt.Errorf("File %s, %v", filename, err)
 		}
 		// Get converted image from input
-		data := inputs["compress"]
+		data := inputs["edit-image"]
 		return data, nil
 	}))
 
@@ -168,7 +168,7 @@ func Define(flow *faasflow.Workflow, context *faasflow.Context) (err error) {
 	uploadDag.AddEdge("edit-image", "validate-and-upload")
 
 	// add the dag to the flow
-	err = flow.ExecuteDag(uploadDag)
+	flow.ExecuteDag(uploadDag)
 
 	flow.
 		OnFailure(func(err error) ([]byte, error) {
